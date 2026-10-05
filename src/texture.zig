@@ -34,9 +34,9 @@ pub const Texture = struct {
     }
 };
 
-// ============================================================
+
 // Skybox procedural
-// ============================================================
+
 
 /// Devuelve el color del cielo para un rayo que no golpeó ningún objeto.
 /// Usa la dirección Y para interpolar entre cielo, horizonte y suelo.
@@ -69,9 +69,9 @@ fn lerp3(a: rl.Vector3, b: rl.Vector3, t: f32) rl.Vector3 {
     };
 }
 
-// ============================================================
+
 // Generadores de texturas procedurales
-// ============================================================
+
 
 /// Crea un patrón de tablero de ajedrez (checkerboard)
 pub fn createCheckerboard(alloc: std.mem.Allocator, size: usize, cell: usize, c1: rl.Color, c2: rl.Color) !Texture {

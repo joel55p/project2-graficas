@@ -5,18 +5,7 @@
 // 2. El loop principal con input de cámara
 // 3. El renderizado concurrente (multi-threaded)
 // 4. La función cast_ray (lanzamiento de rayos con reflexión, refracción, sombras)
-//
-// Features implementadas:
-// - Rotación de cámara orbital (WASD) ........... 10 pts
-// - Zoom (Q/E, mouse scroll) .................... 10 pts
-// - 5 materiales con textura .................... 25 pts
-// - Reflexión ................................... 5 pts
-// - Refracción .................................. 10 pts
-// - Sombras ..................................... 5 pts
-// - Skybox procedural ........................... 20 pts
-// - Cubo AABB (forma nueva) .................... 15 pts
-// - Concurrencia (threads) ..................... 15 pts
-//                                         Total: 115 pts
+
 
 const std = @import("std");
 const rl = @import("raylib");
@@ -28,18 +17,17 @@ const rt = @import("raytracer.zig");
 const tex = @import("texture.zig");
 const htmlColor = @import("cute_colors.zig").htmlColor;
 
-// ============================================================
 // Configuración
-// ============================================================
+
 
 const width = 800;
 const height = 600;
 const num_threads: usize = 8; // Número de threads para renderizado concurrente
 const max_recursion: usize = 3; // Profundidad máxima de reflexión/refracción
 
-// ============================================================
+
 // Contexto de renderizado (se pasa a cada thread)
-// ============================================================
+
 
 const RenderContext = struct {
     pixels: [*]rl.Color,
@@ -55,9 +43,9 @@ const RenderContext = struct {
     fov_scale: f32,
 };
 
-// ============================================================
+
 // Main
-// ============================================================
+
 
 pub fn main() !void {
     // Allocator simple para las texturas (no necesita cleanup manual)
@@ -71,9 +59,9 @@ pub fn main() !void {
 
     var framebuffer = Framebuffer.init(width, height);
 
-    // ----------------------------------------------------------
-    // Texturas procedurales (una por material)
-    // ----------------------------------------------------------
+
+    // Texturas procedurales (una por tipo de material)
+
     const textures = [_]tex.Texture{
         // 0: Piedra — checkerboard gris (piso)
         try tex.createCheckerboard(alloc, 32, 4, htmlColor("#a09080"), htmlColor("#807060")),
@@ -87,9 +75,9 @@ pub fn main() !void {
         try tex.createCheckerboard(alloc, 32, 16, htmlColor("#d0e8f0"), htmlColor("#b8d8e8")),
     };
 
-    // ----------------------------------------------------------
+
     // 5 Materiales (cada uno con textura y parámetros únicos)
-    // ----------------------------------------------------------
+
 
     // 1. Piedra: difuso, poco brillo
     const stone = rt.Material{
@@ -132,9 +120,9 @@ pub fn main() !void {
         .texture_index = 4,
     };
 
-    // ----------------------------------------------------------
+
     // Objetos de la escena (diorama)
-    // ----------------------------------------------------------
+
     const objects = [_]Forma{
         // Piso grande (piedra)
         .{ .Cube = .{
@@ -180,9 +168,9 @@ pub fn main() !void {
         } },
     };
 
-    // ----------------------------------------------------------
+
     // Luces
-    // ----------------------------------------------------------
+
     const lights = [_]rt.Light{
         // Luz cálida principal (arriba-derecha-frente)
         .{
@@ -198,9 +186,9 @@ pub fn main() !void {
         },
     };
 
-    // ----------------------------------------------------------
+
     // Cámara orbital
-    // ----------------------------------------------------------
+
     const look_target = rl.Vector3{ .x = 0, .y = 2, .z = -5 };
     var camera_distance: f32 = 25;
     var camera_x_angle: f32 = 0.8; // ~45° desde el frente-derecha
@@ -211,9 +199,9 @@ pub fn main() !void {
 
     var camera: Camera = .init(.{ .x = 0, .y = 5, .z = camera_distance }, look_target);
 
-    // ----------------------------------------------------------
+
     // Loop principal
-    // ----------------------------------------------------------
+
     while (!rl.windowShouldClose()) {
         const dt = rl.getFrameTime();
 
@@ -253,9 +241,8 @@ pub fn main() !void {
     }
 }
 
-// ============================================================
+
 // Renderizado concurrente
-// ============================================================
 
 /// Divide la imagen en bandas horizontales y asigna una a cada thread
 fn render(
@@ -334,9 +321,9 @@ fn renderBand(ctx: RenderContext) void {
     }
 }
 
-// ============================================================
+
 // Lanzamiento de rayos (cast_ray)
-// ============================================================
+
 
 /// Lanza un rayo desde `origin` en `direction` y calcula el color del píxel.
 /// Implementa reflexión, refracción, sombras, texturas y skybox.
@@ -348,7 +335,7 @@ fn cast_ray(
     textures: []const tex.Texture,
     depth: usize,
 ) rl.Vector3 {
-    // ---- Encontrar la intersección más cercana ----
+    //  Encontrar la intersección más cercana
     var closest_hit: ?rt.Intersect = null;
     var z_buffer: f32 = std.math.floatMax(f32);
 
@@ -366,7 +353,7 @@ fn cast_ray(
     const mat = hit.Material;
     var color: rl.Vector3 = .zero();
 
-    // ---- Color base: de la textura o del material ----
+    //  Color base: de la textura o del material 
     var base_color = mat.Color;
     if (mat.texture_index) |tex_idx| {
         if (tex_idx < textures.len) {
@@ -374,10 +361,10 @@ fn cast_ray(
         }
     }
 
-    // ---- Luz ambiental mínima (evita negro total en sombras) ----
+    //  Luz ambiental mínima (evita negro total en sombras) 
     color = color.add(base_color.scale(0.05));
 
-    // ---- Reflexión ----
+    //  Reflexión
     if (mat.Propiedades.Reflectividad > 0 and depth > 0) {
         const reflect_dir = rl.Vector3.reflect(direction, hit.Normal);
         // Offset pequeño para evitar auto-intersección
@@ -386,7 +373,7 @@ fn cast_ray(
         color = color.add(reflect_color.scale(mat.Propiedades.Reflectividad));
     }
 
-    // ---- Refracción (transparencia) ----
+    //  Refracción (transparencia)
     if (mat.Propiedades.Transparencia > 0 and depth > 0) {
         if (refract(direction, hit.Normal, mat.Refractive_index)) |refract_dir| {
             // Offset en la dirección original para pasar "a través" de la superficie
@@ -404,7 +391,7 @@ fn cast_ray(
         }
     }
 
-    // ---- Iluminación difusa y especular (por cada luz) ----
+    //  Iluminación difusa y especular (por cada luz) ----
     const view_dir = direction.scale(-1); // Dirección del punto hacia la cámara
 
     for (lights) |light| {
@@ -434,9 +421,9 @@ fn cast_ray(
     return color;
 }
 
-// ============================================================
+
 // Refracción (Ley de Snell)
-// ============================================================
+
 
 /// Calcula la dirección refractada usando la Ley de Snell.
 /// Retorna null si hay reflexión total interna.
@@ -466,9 +453,9 @@ fn refract(incident: rl.Vector3, normal: rl.Vector3, refractive_index: f32) ?rl.
     }
 }
 
-// ============================================================
+
 // Sombras
-// ============================================================
+
 
 /// Verifica si un punto está en sombra respecto a una luz.
 /// Lanza un rayo desde el punto hacia la luz y revisa si algo lo bloquea.
