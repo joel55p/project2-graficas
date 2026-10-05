@@ -27,8 +27,10 @@ Diorama de cubos texturizados con raytracing implementado en Zig usando Raylib.
 
 ```bash
 zig build run -Doptimize=ReleaseFast
+zig build run
 ```
+
 
 ## Video
 
-<!-- TODO: agregar video del diorama -->
+<!--  -->
